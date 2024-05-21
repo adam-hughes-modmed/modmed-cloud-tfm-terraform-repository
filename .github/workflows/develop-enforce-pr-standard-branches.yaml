@@ -33,14 +33,13 @@ jobs:
           script: |
             const branchCheckResult = '${{ steps.check_source_branch.outcome }}';
             const state = branchCheckResult === 'success' ? 'success' : 'failure';
-            const description = (branchCheckResult === 'success')
-              ? 'Branch name check passed'
-              : 'Branch name check failed';
+            const description = `Branch name check ${state}.`;
 
-            github.rest.repos.createCommitStatus({
+            await github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state,  
-              context: "develop-source-branch-check", # Match the job name
-              description,  
+              state,
+              context: "develop-source-branch-check", 
+              description,
             });
+
