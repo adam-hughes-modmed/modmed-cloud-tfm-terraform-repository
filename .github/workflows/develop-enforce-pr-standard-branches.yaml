@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Get branch names
         id: branch-names
-        uses: tj-actions/branch-names@v8
+        uses: tj-actions/branch-names@v8 # Ensure you're using the latest version
         with:
           protected_branches: |
             ^feature/[a-z][a-z]-ENG-[0-9]{5}-.*$
@@ -44,15 +44,13 @@ jobs:
       - name: Update PR Status
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const branchCheckResult = "${{ steps.develop-source-branch-check.outputs.branch_check_result }}";
             const state = branchCheckResult === "success" ? "success" : "failure";
             const description = state === "success" ? "Branch name check passed" : "Branch name check failed";
 
             github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              ...context.repo,
               sha: context.payload.pull_request.head.sha,
               state: state,
               context: "Branch Protection",
