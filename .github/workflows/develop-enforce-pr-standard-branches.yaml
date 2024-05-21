@@ -12,7 +12,7 @@ jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
     outputs:
-      branch_check_result: ${{ steps.check_source_branch.outputs.branch_check_result }} # Output the result
+      branch_check_result: ${{ steps.check_source_branch.outputs.branch_check_result }}
     steps:
       - name: Check Source Branch
         id: check_source_branch  # Add an ID to this step to access its outputs
@@ -21,7 +21,7 @@ jobs:
         run: |
           if [[ ! "${{ github.head_ref }}" =~ ^(feature|hotfix)/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*' or 'hotfix/[a-z0-9]+-ENG-#####-*'."
-            echo "::set-output name=branch_check_result::failure" # Set failure output explicitly
+            echo "::set-output name=branch_check_result::failure"
             exit 1 
           fi
           echo "::set-output name=branch_check_result::success" 
@@ -31,10 +31,9 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = "${{ fromJSON(steps.develop-source-branch-check.outputs.branch_check_result) || 'failure' }}"; # Get output or default to 'failure'
+            const branchCheckResult = '${{ steps.develop-source-branch-check.outputs.branch_check_result }}'; // Wrap in single quotes
             const state = branchCheckResult === "success" ? "success" : "failure";
             const description = state === "success" ? "Branch name check passed" : "Branch name check failed (or timed out)";
-
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
