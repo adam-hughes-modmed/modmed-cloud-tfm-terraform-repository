@@ -6,14 +6,16 @@ on:
     branches: [develop]
 
 permissions:
-  statuses: write
+  statuses: write 
 
 jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
+    outputs:
+      branch_check_result: ${{ steps.check_source_branch.outcome }}
     steps:
       - name: Check Source Branch
-        id: check_source_branch  # Add an ID to this step to access its outputs
+        id: check_source_branch  
         timeout-minutes: 1
         run: |
           if [[ "${{ github.base_ref }}" != "develop" ]]; then
@@ -28,11 +30,11 @@ jobs:
           fi
 
       - name: Update PR Status
-        if: always() 
+        if: always()  # Always run this step to update the status
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = '${{ steps.check_source_branch.outputs.branch_check_result }}';
+            const branchCheckResult = '${{ steps.check_source_branch.outcome }}';
             const state = branchCheckResult === 'success' ? 'success' : 'failure';
             const description = (branchCheckResult === 'success')
               ? 'Branch name check passed'
@@ -45,3 +47,4 @@ jobs:
               context: "Branch Protection",
               description,  
             });
+
