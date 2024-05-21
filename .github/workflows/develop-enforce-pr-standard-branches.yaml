@@ -11,8 +11,6 @@ permissions:
 jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
-    outputs:
-      branch_check_result: ${{ steps.check_source_branch.outcome }}
     steps:
       - name: Check Source Branch
         id: check_source_branch  
@@ -37,12 +35,12 @@ jobs:
             const state = branchCheckResult === 'success' ? 'success' : 'failure';
             const description = (branchCheckResult === 'success')
               ? 'Branch name check passed'
-              : (branchCheckResult === 'failure' ? 'Branch name check failed' : 'Branch name check timed out');
+              : 'Branch name check failed';
 
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state,  # Simplified
+              state,  
               context: "Branch Protection",
-              description,  # Simplified
+              description,  
             });
