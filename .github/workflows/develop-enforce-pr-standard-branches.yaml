@@ -2,12 +2,8 @@ name: Branch Protection
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - develop  # Only monitor pull requests targeting the 'develop' branch
+    types: [opened, synchronize, reopened]
+    branches: [develop]
 
 permissions:
   statuses: write # Grant write permission for commit statuses
@@ -15,38 +11,29 @@ permissions:
 jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
+    outputs:
+      branch_check_result: ${{ steps.check_source_branch.outputs.branch_check_result }} # Output the result
     steps:
-      - name: Get branch names
-        id: branch-names
-        uses: tj-actions/branch-names@v8
-        with:
-          protected_branches: |
-            feature/*
-        timeout-minutes: 2
-
       - name: Check Source Branch
+        id: check_source_branch  # Add an ID to this step to access its outputs
+        if: "!startsWith(github.head_ref, 'feature/') && !startsWith(github.head_ref, 'hotfix/')"
+        timeout-minutes: 1
         run: |
-          # Check if target branch is not 'develop'
-          if [[ "${{ github.base_ref }}" != "develop" ]]; then
-            echo "This action only runs on pull requests targeting the 'develop' branch."
-            exit 0 # Neutral exit
-          fi
-
-          # Check if source branch is not protected
-          if [[ "${{ steps.branch-names.outputs.is_protected }}" == "false" ]]; then
+          if [[ ! "${{ github.head_ref }}" =~ ^(feature|hotfix)/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*' or 'hotfix/[a-z0-9]+-ENG-#####-*'."
-            exit 1  # Failure exit
+            echo "::set-output name=branch_check_result::failure" # Set failure output explicitly
+            exit 1 
           fi
-
-          echo "::set-output name=branch_check_result::success" # Set success output
+          echo "::set-output name=branch_check_result::success" 
 
       - name: Update PR Status
+        if: always() # Always run to update status
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = "${{ steps.develop-source-branch-check.outputs.branch_check_result }}";
+            const branchCheckResult = "${{ fromJSON(steps.develop-source-branch-check.outputs.branch_check_result) || 'failure' }}"; # Get output or default to 'failure'
             const state = branchCheckResult === "success" ? "success" : "failure";
-            const description = state === "success" ? "Branch name check passed" : "Branch name check failed";
+            const description = state === "success" ? "Branch name check passed" : "Branch name check failed (or timed out)";
 
             github.rest.repos.createCommitStatus({
               ...context.repo,
@@ -55,3 +42,4 @@ jobs:
               context: "Branch Protection",
               description: description
             });
+
