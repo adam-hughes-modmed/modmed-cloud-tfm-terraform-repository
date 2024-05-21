@@ -15,7 +15,7 @@ jobs:
       branch_check_result: ${{ steps.check_source_branch.outputs.branch_check_result }}
     steps:
       - name: Check Source Branch
-        id: check_source_branch
+        id: check_source_branch  
         timeout-minutes: 1
         run: |
           if [[ "${{ github.base_ref }}" != "develop" ]]; then
@@ -32,7 +32,7 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = "${{ fromJSON(steps.check_source_branch.outputs.branch_check_result) || 'failure' }}";
+            const branchCheckResult = "${{ fromJSON(steps.develop-source-branch-check.outputs.branch_check_result) || 'failure' }}";
             const state = branchCheckResult === "success" ? "success" : "failure";
             const description = (
               state === "success"
