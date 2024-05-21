@@ -2,55 +2,37 @@ name: Branch Protection
 
 on:
   pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - develop  # Only monitor pull requests targeting the 'develop' branch
+    types: [opened, synchronize, reopened]
+    branches: [develop]
+
+permissions:
+  statuses: write
 
 jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Get branch names
-        id: branch-names
-        uses: tj-actions/branch-names@v8
-        with:
-          protected_branches: |
-            ^feature/[a-z][a-z]-ENG-[0-9]{5}-.*$
-            ^hotfix/[a-z][a-z]-ENG-[0-9]{5}-.*$
-        timeout-minutes: 2
-
-      - name: Check Source Branch
+      - name: Check if Source Branch Starts with 'feature/'
+        id: branch-check
         run: |
-          # Check if target branch is not 'develop'
-          if [[ "${{ github.base_ref }}" != "develop" ]]; then
-            echo "This action only runs on pull requests targeting the 'develop' branch."
-            exit 0 # Neutral exit
+          if [[ ! "${{ github.head_ref }}" =~ ^feature/ ]]; then
+            echo "::error::Pull requests to 'develop' must originate from branches starting with 'feature/'."
+            echo "status=failure" >> $GITHUB_ENV
+            exit 1
+          else
+            echo "status=success" >> $GITHUB_ENV
           fi
 
-          # Check if source branch is not protected
-          if [[ "${{ steps.branch-names.outputs.is_protected }}" == "false" ]]; then
-            echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z][a-z]-ENG-#####-*' or 'hotfix/[a-z][a-z]-ENG-#####-*'."
-            exit 1  # Failure exit
-          fi
-
-          echo "::set-output name=branch_check_result::success" # Set success output
-
-      - name: Update PR Status
+      - name: Update PR Status (Success/Failure)
+        if: always()
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = "${{ steps.develop-source-branch-check.outputs.branch_check_result }}";
-            const state = branchCheckResult === "success" ? "success" : "failure";
-            const description = state === "success" ? "Branch name check passed" : "Branch name check failed";
-            
+            const status = process.env.status;
             github.rest.repos.createCommitStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state: state,
+              state: status,
               context: "Branch Protection",
-              description: description
+              description: status === "success" ? "Branch name check passed" : "Branch name check failed"
             });
