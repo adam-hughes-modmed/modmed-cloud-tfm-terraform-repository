@@ -1,0 +1,23 @@
+---
+
+name: main-enforce-pr-from-develop
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - main
+
+jobs:
+  check-base-branch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check Base Branch
+        if: github.head_ref != 'develop'
+        run: |
+          echo "Pull requests to 'main' must be based on the 'develop' branch."
+          exit 1
