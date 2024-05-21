@@ -18,11 +18,11 @@ jobs:
     steps:
       - name: Get branch names
         id: branch-names
-        uses: tj-actions/branch-names@v8 # Ensure you're using the latest version
+        uses: tj-actions/branch-names@v8
         with:
           protected_branches: |
-            ^feature/[a-z][a-z]-ENG-[0-9]{5}-.*$
-            ^hotfix/[a-z][a-z]-ENG-[0-9]{5}-.*$
+            ^feature/[a-z0-9]+-ENG-[0-9]{5}-.*$
+            ^hotfix/[a-z0-9]+-ENG-[0-9]{5}-.*$
         timeout-minutes: 2
 
       - name: Check Source Branch
@@ -35,7 +35,7 @@ jobs:
 
           # Check if source branch is not protected
           if [[ "${{ steps.branch-names.outputs.is_protected }}" == "false" ]]; then
-            echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z][a-z]-ENG-#####-*' or 'hotfix/[a-z][a-z]-ENG-#####-*'."
+            echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*' or 'hotfix/[a-z0-9]+-ENG-#####-*'."
             exit 1  # Failure exit
           fi
 
