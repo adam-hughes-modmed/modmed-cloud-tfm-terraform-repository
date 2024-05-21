@@ -11,8 +11,6 @@ permissions:
 jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
-    outputs:
-      branch_check_result: ${{ steps.check_source_branch.outcome }}
     steps:
       - name: Check Source Branch
         id: check_source_branch  
@@ -23,14 +21,13 @@ jobs:
             exit 0  
           elif [[ ! "${{ github.head_ref }}" =~ ^feature/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*'."
-            echo "::set-output name=branch_check_result::failure"
             exit 1  
           else
-            echo "::set-output name=branch_check_result::success"
+            echo "Branch name check passed"
           fi
 
       - name: Update PR Status
-        if: always()  # Always run this step to update the status
+        if: always() 
         uses: actions/github-script@v6
         with:
           script: |
@@ -44,7 +41,6 @@ jobs:
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
               state,  
-              context: "Branch Protection",
+              context: "develop-source-branch-check", # Context should match the job name
               description,  
             });
-
