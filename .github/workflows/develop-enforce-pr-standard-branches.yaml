@@ -12,21 +12,36 @@ jobs:
   develop-source-branch-check:
     runs-on: ubuntu-latest
     steps:
-      - name: Check if Source Branch Starts with 'feature/'
-        if: "!startsWith(github.head_ref, 'feature/')"  # Condition for failure
+      - name: Check Source Branch
+        id: check_source_branch  # Add an ID to this step to access its outputs
+        timeout-minutes: 1
         run: |
-          echo "::error::Pull requests to 'develop' must originate from branches starting with 'feature/'."
-          exit 1
+          if [[ "${{ github.base_ref }}" != "develop" ]]; then
+            echo "This action only runs on pull requests targeting the 'develop' branch."
+            exit 0  
+          elif [[ ! "${{ github.head_ref }}" =~ ^feature/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
+            echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*'."
+            echo "::set-output name=branch_check_result::failure"
+            exit 1  
+          else
+            echo "::set-output name=branch_check_result::success"
+          fi
 
-      - name: Update PR Status (Success)
-        if: always() && github.base_ref == 'develop'
+      - name: Update PR Status
+        if: always() 
         uses: actions/github-script@v6
         with:
           script: |
+            const branchCheckResult = '${{ steps.check_source_branch.outputs.branch_check_result }}';
+            const state = branchCheckResult === 'success' ? 'success' : 'failure';
+            const description = (branchCheckResult === 'success')
+              ? 'Branch name check passed'
+              : 'Branch name check failed';
+
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state: "success",
+              state,  
               context: "Branch Protection",
-              description: "Branch name check passed"
+              description,  
             });
