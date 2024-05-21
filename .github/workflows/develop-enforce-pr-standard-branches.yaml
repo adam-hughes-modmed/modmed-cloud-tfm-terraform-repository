@@ -40,7 +40,7 @@ jobs:
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state,
-              context: "Branch Protection",
-              description,
+              state,  
+              context: "develop-source-branch-check", # Match the job name
+              description,  
             });
