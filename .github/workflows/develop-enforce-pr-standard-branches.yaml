@@ -21,7 +21,7 @@ jobs:
         uses: tj-actions/branch-names@v8
         with:
           protected_branches: |
-            ^feature\/*
+            feature/.*
         timeout-minutes: 2
 
       - name: Check Source Branch
