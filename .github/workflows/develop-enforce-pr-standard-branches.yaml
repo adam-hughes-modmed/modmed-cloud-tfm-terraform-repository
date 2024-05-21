@@ -6,7 +6,7 @@ on:
     branches: [develop]
 
 permissions:
-  statuses: write # Grant write permission for commit statuses
+  statuses: write 
 
 jobs:
   develop-source-branch-check:
@@ -15,25 +15,31 @@ jobs:
       branch_check_result: ${{ steps.check_source_branch.outputs.branch_check_result }}
     steps:
       - name: Check Source Branch
-        id: check_source_branch  # Add an ID to this step to access its outputs
-        if: "!startsWith(github.head_ref, 'feature/') && !startsWith(github.head_ref, 'hotfix/')"
+        id: check_source_branch
         timeout-minutes: 1
         run: |
-          if [[ ! "${{ github.head_ref }}" =~ ^(feature|hotfix)/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
+          if [[ "${{ github.base_ref }}" != "develop" ]]; then
+            echo "::set-output name=branch_check_result::success" # Neutral exit
+          elif [[ ! "${{ github.head_ref }}" =~ ^(feature|hotfix)/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*' or 'hotfix/[a-z0-9]+-ENG-#####-*'."
             echo "::set-output name=branch_check_result::failure"
-            exit 1 
+          else
+            echo "::set-output name=branch_check_result::success"
           fi
-          echo "::set-output name=branch_check_result::success" 
 
       - name: Update PR Status
-        if: always() # Always run to update status
+        if: always() 
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = '${{ steps.develop-source-branch-check.outputs.branch_check_result }}'; // Wrap in single quotes
+            const branchCheckResult = "${{ fromJSON(steps.check_source_branch.outputs.branch_check_result) || 'failure' }}";
             const state = branchCheckResult === "success" ? "success" : "failure";
-            const description = state === "success" ? "Branch name check passed" : "Branch name check failed (or timed out)";
+            const description = (
+              state === "success"
+                ? "Branch name check passed"
+                : (branchCheckResult === 'failure' ? "Branch name check failed" : "Branch name check timed out")
+            );
+
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
