@@ -39,7 +39,7 @@ jobs:
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
               state,
-              context: "develop-source-branch-check", 
+              context: "develop-enforce-pr-standard-branches", 
               description,
             });
 
