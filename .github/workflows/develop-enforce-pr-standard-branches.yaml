@@ -23,10 +23,9 @@ jobs:
             exit 0  
           elif [[ ! "${{ github.head_ref }}" =~ ^(feature|hotfix)/[a-z0-9]+-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-z0-9]+-ENG-#####-*' or 'hotfix/[a-z0-9]+-ENG-#####-*'."
-            echo "branch_check_result=failure" >> $GITHUB_OUTPUT # Update the output using environment file
             exit 1  
           else
-            echo "branch_check_result=success" >> $GITHUB_OUTPUT
+            echo "Branch name check passed"
           fi
 
       - name: Update PR Status
@@ -34,17 +33,16 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
-            const branchCheckResult = process.env.branch_check_result || 'failure'; # Read from environment variable
-            const state = branchCheckResult === "success" ? "success" : "failure";
-            const description = (
-              state === "success"
-                ? "Branch name check passed"
-                : (branchCheckResult === 'failure' ? "Branch name check failed" : "Branch name check timed out")
-            );
+            const branchCheckResult = '${{ steps.develop-source-branch-check.outcome }}';
+            const state = branchCheckResult === 'success' ? 'success' : 'failure';
+            const description = (branchCheckResult === 'success')
+              ? 'Branch name check passed'
+              : (branchCheckResult === 'failure' ? 'Branch name check failed' : 'Branch name check timed out');
+
             github.rest.repos.createCommitStatus({
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
-              state: state,
+              state,  # Simplified
               context: "Branch Protection",
-              description: description
+              description,  # Simplified
             });
