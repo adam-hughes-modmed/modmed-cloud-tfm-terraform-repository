@@ -1,24 +1,20 @@
 name: main-source-branch-check
 
 on:
-  pull_request:
-    types:
-      - opened
-      - synchronize
-      - reopened
-    branches:
-      - main
-
-permissions:
-  statuses: write 
-
+  workflow_call:
+    # inputs:
+    #   os_version:
+    #     description: "Pipeline operating system"
+    #     default: "ubuntu-latest"
+    #     required: false
+    #     type: string
 jobs:
+
   main-source-branch-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check Source Branch
         id: check_source_branch  
-        # timeout-minutes: 1
         run: |
           if [[ ! "${{ github.head_ref }}" =~ ^feature/[a-zA-Z]{2}-ENG-[0-9]{5}-.*$ ]]; then
             echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-zA-Z]{2}-ENG-#####-*'."
@@ -43,4 +39,3 @@ jobs:
               context: "main-source-branch-check", 
               description,
             });
-
