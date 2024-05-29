@@ -1,16 +1,11 @@
-name: main-source-branch-check
+name: source-branch-check
 
 on:
   workflow_call:
-    # inputs:
-    #   os_version:
-    #     description: "Pipeline operating system"
-    #     default: "ubuntu-latest"
-    #     required: false
-    #     type: string
+
 jobs:
 
-  main-source-branch-check:
+  source-branch-check:
     runs-on: ubuntu-latest
     steps:
       - name: Check Source Branch
@@ -36,6 +31,6 @@ jobs:
               ...context.repo,
               sha: context.payload.pull_request.head.sha,
               state,
-              context: "main-source-branch-check", 
+              context: "source-branch-check", 
               description,
             });
