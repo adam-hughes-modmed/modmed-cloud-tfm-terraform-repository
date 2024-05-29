@@ -1,0 +1,36 @@
+name: source-branch-check
+
+on:
+  workflow_call:
+
+jobs:
+
+  source-branch-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Source Branch
+        id: check_source_branch  
+        run: |
+          if [[ ! "${{ github.head_ref }}" =~ ^feature/[a-zA-Z]{2}-ENG-[0-9]{5}-.*$ ]]; then
+            echo "::error::Pull requests to 'develop' must originate from branches named 'feature/[a-zA-Z]{2}-ENG-#####-*'."
+            exit 1  
+          else
+            echo "Branch name check passed"
+          fi
+
+      - name: Update PR Status
+        if: always() 
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const branchCheckResult = '${{ steps.check_source_branch.outcome }}';
+            const state = branchCheckResult === 'success' ? 'success' : 'failure';
+            const description = `Branch name check ${state}.`;
+
+            await github.rest.repos.createCommitStatus({
+              ...context.repo,
+              sha: context.payload.pull_request.head.sha,
+              state,
+              context: "source-branch-check", 
+              description,
+            });
